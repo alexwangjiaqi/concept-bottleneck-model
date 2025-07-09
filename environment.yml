@@ -11,4 +11,5 @@ dependencies:
   - pytorch-cuda=11.8
   - torchaudio
   - torchvision
+  - jupyter
 prefix: /home/aw2052/.conda/envs/cbm
