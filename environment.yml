@@ -1,0 +1,14 @@
+name: cbm
+channels:
+  - defaults
+dependencies:
+  - python=3.11
+  - matplotlib
+  - numpy
+  - pandas
+  - scikit-learn
+  - pytorch
+  - pytorch-cuda=11.8
+  - torchaudio
+  - torchvision
+prefix: /home/aw2052/.conda/envs/cbm
