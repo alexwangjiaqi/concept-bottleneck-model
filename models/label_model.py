@@ -2,7 +2,7 @@ import torch
 import torch.nn as nn
 
 class LabelModel(nn.Module):
-    def __init__(self, num_concepts=312, num_classes=200):
+    def __init__(self, num_concepts=112, num_classes=200):
         super().__init__()
 
         # Simple linear classifier from concepts to labels

@@ -1,9 +1,11 @@
 import torch
 import torch.nn as nn
 import torchvision.models as models
+from cub_loader import SELECTED_CONCEPTS
+num_concepts = len(SELECTED_CONCEPTS)
 
 class ConceptModel(nn.Module):
-    def __init__(self, num_concepts=312):
+    def __init__(self, num_concepts=num_concepts):
         super().__init__()
         # Load pretrained ResNet18
         self.resnet = models.resnet18(pretrained=True)

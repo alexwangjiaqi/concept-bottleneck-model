@@ -16,7 +16,7 @@ print("Using device:", device)
 # Add project root to path so we can import modules
 sys.path.append(os.path.abspath(os.path.join(os.path.dirname(__file__), '..')))
 
-from dataset import load_data
+from cub_loader import load_data
 from models.concept_model import ConceptModel
 from models.label_model import LabelModel  # assuming label model is defined there
 

@@ -16,7 +16,7 @@ import torch.nn.functional as F
 # Add the project root to Python path
 sys.path.append(os.path.abspath(os.path.join(os.path.dirname(__file__), '..')))
 
-from dataset import load_data
+from cub_loader import load_data, find_class_imbalance, SELECTED_CONCEPTS, N_CLASSES
 from models.concept_model import ConceptModel
 
 
@@ -29,6 +29,8 @@ weight_decay = 1e-5          # L2 regularization strength to prevent overfitting
 num_concepts = 312           # Number of binary attributes/concepts to predict (CUB dataset has 312)
 log_every = 10               # Print training info (e.g., loss) every N batches
 save_path = 'checkpoints/concept_model.pth'  # File path to save the trained model
+num_concepts = len(SELECTED_CONCEPTS)
+imbalance_ratio = find_class_imbalance('data/CUB_processed/train.pkl', SELECTED_CONCEPTS)
 
 
 # ==== Device Configuration ====
@@ -39,7 +41,7 @@ print("Using device:", device)
 # ==== Model Initialization ====
 model = ConceptModel(num_concepts=num_concepts)
 model = model.to(device)
-#print(model)
+print(model)
 
 
 # ==== Data Loaders ====
@@ -48,18 +50,21 @@ train_loader = load_data(
     batch_size=64,
     use_attr=True,
     no_img=False,
-    uncertain_label=False
+    uncertain_label=False,
+    reduced_attr = SELECTED_CONCEPTS
 )
 val_loader = load_data(
     pkl_paths=['data/CUB_processed/val.pkl'],
     batch_size=64,
     use_attr=True,
     no_img=False,
-    uncertain_label=False
+    uncertain_label=False,
+    reduced_attr = SELECTED_CONCEPTS
 )
 
 # ==== Loss and Optimizer ====
-criterion = nn.BCEWithLogitsLoss()
+weights_tensor = torch.tensor(imbalance_ratio, dtype=torch.float32).to(device)
+criterion = nn.BCEWithLogitsLoss(pos_weight=weights_tensor)
 optimizer = optim.Adam(model.parameters(), lr=learning_rate)
 
 

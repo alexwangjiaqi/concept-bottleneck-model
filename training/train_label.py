@@ -16,7 +16,7 @@ import torch.nn.functional as F
 # Add the project root to Python path
 sys.path.append(os.path.abspath(os.path.join(os.path.dirname(__file__), '..')))
 
-from dataset import load_data
+from cub_loader import load_data, SELECTED_CONCEPTS, N_CLASSES
 from models.label_model import LabelModel
 
 
@@ -25,8 +25,8 @@ num_epochs = 100              # Number of times to iterate over training set
 batch_size = 64              # Samples per gradient update
 learning_rate = 1e-3         # Optimizer step size
 weight_decay = 1e-5          # L2 regularization strength
-num_concepts = 312           # Number of input concepts (CUB: 312)
-num_classes = 200            # Number of output labels (CUB: 200 classes)
+num_concepts = len(SELECTED_CONCEPTS)           # Number of input concepts (CUB: 312)
+num_classes = N_CLASSES           # Number of output labels (CUB: 200 classes)
 save_path = 'checkpoints/label_model.pth'  # Model save path
 
 

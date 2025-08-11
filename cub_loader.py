@@ -232,7 +232,7 @@ CLASS_NAMES = [
     "Winter_Wren",
     "Common_Yellowthroat",
 ]
-# Set of CUB attributes selected by original CBM paper
+# Set of CUB concepts selected by original CBM paper
 SELECTED_CONCEPTS = [
     1,
     4,
@@ -348,7 +348,7 @@ SELECTED_CONCEPTS = [
     311,
 ]
 
-# Names of all CUB attributes
+# Names of all CUB concepts
 CONCEPT_SEMANTICS = [
     "has_bill_shape::curved_(up_or_down)",
     "has_bill_shape::dagger",
@@ -691,7 +691,7 @@ class CUBDataset(Dataset):
         """
         Args:
             pkl_file_paths (list): List of full paths to .pkl data files.
-            use_attr (bool): Whether to load and return attribute (concept) labels.
+            use_attr (bool): Whether to load and return concept (concept) labels.
                             Set to False when only using class labels (e.g., for X → Y training).
             no_img (bool): Whether to skip loading images. Set to True for concept-only input (e.g., C → Y).
             uncertain_label (bool): If True, use soft concept labels from 'uncertain_attribute_label';
@@ -763,7 +763,7 @@ def load_data(
         use_attr (bool): whether to load concept labels
         no_img (bool): whether to return just concepts (e.g., for C → Y training)
         batch_size (int): batch size
-        uncertain_label (bool): use soft labels (weighted by attribute certainty)
+        uncertain_label (bool): use soft labels (weighted by concept certainty)
         image_dir (str): base folder for image loading
         transform (callable): image transformation pipeline (optional)
         reduced_attr (list[int] or None): If provided, only these concept indices will be used.
@@ -798,9 +798,9 @@ def load_data(
         use_attr=use_attr,
         no_img=no_img,
         uncertain_label=uncertain_label,
-        transform=transform
+        transform=transform,
         reduced_attr=reduced_attr
-    )
+        )
 
     loader = DataLoader(
         dataset,
@@ -810,3 +810,35 @@ def load_data(
     )
 
     return loader
+
+
+def find_class_imbalance(pkl_file, selected_concepts=SELECTED_CONCEPTS):
+    """
+    Calculate per-concept imbalance ratio for SELECTED_CONCEPTS only.
+    
+    Args:
+        pkl_file (str): Path to .pkl file containing CUB data.
+        selected_concepts (list[int]): Indices of the concepts you want (e.g., your 112 selected concepts).
+        
+    Returns:
+        np.array: imbalance ratios for each selected concept.
+    """
+    with open(pkl_file, 'rb') as f:
+        data = pickle.load(f)
+
+    n = len(data)
+    n_attr = len(selected_concepts)
+
+    # Count positives for each selected concept
+    n_ones = [0] * n_attr
+    for d in data:
+        labels = d['attribute_label']
+        for idx_in_list, attr_idx in enumerate(selected_concepts):
+            n_ones[idx_in_list] += labels[attr_idx]
+
+    # Compute imbalance ratio: (total / positives) - 1
+    imbalance_ratio = []
+    for count in n_ones:
+        imbalance_ratio.append((n / count) - 1 if count > 0 else float('inf'))
+
+    return np.array(imbalance_ratio, dtype=np.float32)
