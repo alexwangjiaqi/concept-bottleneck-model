@@ -6,10 +6,25 @@ __pycache__/
 # Ignore Jupyter checkpoints
 .ipynb_checkpoints/
 
-# Ignore data and model files
+# Datasets
 data/
-*.pt
 *.pkl
+*.npz
+*.npy
+
+# Model checkpoints
+*.pt
+*.pth
+*.ckpt
+*.onnx
+*.bin
+
+# Results, logs, temp files
+runs/
+results/
+logs/
+*.tar
+*.zip
 
 # Ignore environment files
 .env/
