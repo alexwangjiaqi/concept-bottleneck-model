@@ -31,18 +31,18 @@ test_loader = load_data(
 
 # ==== Load Models ====
 #  Load Concept Predictor
-concept_model = ConceptModel(num_concepts=312)
+concept_model = ConceptModel(num_concepts=112)
 concept_model.load_state_dict(torch.load('checkpoints/concept_model.pth', map_location=device))
 concept_model.to(device)
 concept_model.eval()
 
 # Load Label Predictor
-label_model = LabelModel(num_concepts=312, num_classes=200)
+label_model = LabelModel(num_concepts=112, num_classes=200)
 label_model.load_state_dict(torch.load('checkpoints/label_model.pth', map_location=device))
 label_model.to(device)
 label_model.eval()
 
-"""# ==== Run X → C → Y on Test Set ====
+# ==== Run X → C → Y on Test Set ====
 all_preds = []
 all_labels = []
 
@@ -68,7 +68,6 @@ all_labels = torch.cat(all_labels).numpy()
 
 accuracy = accuracy_score(all_labels, all_preds)
 print(f"Test Accuracy (X → C → Y): {accuracy:.4f}")
-"""
 
 
 ### ==== Visualize Predictions ====

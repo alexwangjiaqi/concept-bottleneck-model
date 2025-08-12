@@ -731,7 +731,7 @@ class CUBDataset(Dataset):
             attr_label = torch.tensor(attr_label, dtype=torch.float32)
 
         # Get class label
-        class_label = torch.tensor(sample['class_label'], dtype=torch.long)
+        class_label = torch.tensor(int(sample['class_label']), dtype=torch.long)
 
         # Return appropriate tuple
         if self.no_img and self.use_attr:

@@ -16,7 +16,7 @@ import torch.nn.functional as F
 # Add the project root to Python path
 sys.path.append(os.path.abspath(os.path.join(os.path.dirname(__file__), '..')))
 
-from cub_loader import load_data, find_class_imbalance, SELECTED_CONCEPTS, N_CLASSES
+from cub_loader import load_data, find_class_imbalance, SELECTED_CONCEPTS
 from models.concept_model import ConceptModel
 
 
@@ -133,8 +133,6 @@ def evaluate_model_auc(model, val_loader, device):
     all_outputs = torch.cat(all_outputs, dim=0).numpy()  # Shape: [num_samples, num_concepts]
     all_labels = torch.cat(all_labels, dim=0).numpy() 
 
-
-
     aucs = []
 
     for concept_idx in range(all_labels.shape[1]):
@@ -220,16 +218,3 @@ def train_model_with_early_stopping(model, train_loader, val_loader, criterion, 
 
     print(f"Best validation AUC: {best_auc:.4f}")
 
-
-with torch.no_grad():
-    for images, concepts, _ in val_loader:
-        print("Batch concept shape:", concepts.shape)
-        print("Min value:", concepts.min().item())
-        print("Max value:", concepts.max().item())
-        break  # just check the first batch
-
-
-train_model_with_early_stopping(model, train_loader, val_loader, criterion, optimizer, device, num_epochs, save_path)
-
-'''train_model(model, train_loader, criterion, optimizer, device, num_epochs)
-torch.save(model.state_dict(), save_path)'''

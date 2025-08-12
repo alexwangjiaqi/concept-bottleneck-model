@@ -43,28 +43,31 @@ print(model)
 # ==== Load Data ====
 train_loader = load_data(
     pkl_paths=['data/CUB_processed/train.pkl'],
-    batch_size=batch_size,
+    batch_size=64,
     use_attr=True,
-    no_img=True,     # No image needed, just concept → label
-    uncertain_label=True
+    no_img=True,
+    uncertain_label=False,
+    reduced_attr = SELECTED_CONCEPTS
 )
 val_loader = load_data(
     pkl_paths=['data/CUB_processed/val.pkl'],
-    batch_size=batch_size,
+    batch_size=64,
     use_attr=True,
     no_img=True,
-    uncertain_label=True
+    uncertain_label=False,
+    reduced_attr = SELECTED_CONCEPTS
 )
+
+
 
 # ==== Loss and Optimizer ====
 criterion = nn.CrossEntropyLoss()
 optimizer = optim.Adam(model.parameters(), lr=learning_rate, weight_decay=weight_decay)
 
 
-def train_model_with_early_stopping(model, train_loader, val_loader, criterion, optimizer, device, num_epochs, save_path, patience=3):
-    best_auc = 0.0                      # Best AUC so far
-    epochs_no_improve = 0              # Counter for early stopping
-    early_stop = False
+def train_model_with_early_stopping(model, train_loader, val_loader, criterion, optimizer, device, num_epochs, save_path, patience=5):
+    best_acc = 0.0
+    epochs_no_improve = 0
 
     for epoch in range(num_epochs):
         model.train()
@@ -72,7 +75,7 @@ def train_model_with_early_stopping(model, train_loader, val_loader, criterion, 
 
         for concepts, labels in train_loader:
             concepts = concepts.to(device)
-            labels = labels.to(device)
+            labels = labels.to(device).long()
 
             outputs = model(concepts)
             loss = criterion(outputs, labels)
@@ -85,71 +88,41 @@ def train_model_with_early_stopping(model, train_loader, val_loader, criterion, 
 
         epoch_loss = running_loss / len(train_loader)
 
+        # Evaluate on validation set (accuracy)
+        val_acc = evaluate_model_acc(model, val_loader, device)
 
-        # Evaluate on validation set
-        val_auc = evaluate_model_auc(model, val_loader, device)  # Use your AUC function here
+        print(f"Epoch [{epoch+1}/{num_epochs}]  Loss: {epoch_loss:.4f}  Val Acc: {val_acc:.4f}")
 
-        print(f"Epoch [{epoch+1}/{num_epochs}], Loss: {epoch_loss:.4f}, Val AUC: {val_auc:.4f}")
-
-        # Check if validation AUC improved
-        if val_auc > best_auc:
-            best_auc = val_auc
+        # Early stopping on accuracy
+        if val_acc > best_acc:
+            best_acc = val_acc
             epochs_no_improve = 0
             torch.save(model.state_dict(), save_path)
-            print("AUC improved, saving model")
+            print("Accuracy improved — saving model.")
         else:
             epochs_no_improve += 1
-            print(f"No improvement in AUC for {epochs_no_improve} epochs")
+            print(f"No improvement for {epochs_no_improve} epoch(s).")
 
-        # Early stopping condition
         if epochs_no_improve >= patience:
             print("Early stopping triggered.")
-            early_stop = True
             break
 
-    print(f"Best validation AUC: {best_auc:.4f}")
+    print(f"Best validation accuracy: {best_acc:.4f}")
 
 
-def evaluate_model_auc(model, val_loader, device):
-    model.eval()  # Set to evaluation mode
 
-    all_logits = []  # Store raw model outputs (logits)
-    all_labels = []  # Store ground truth class labels
-
+def evaluate_model_acc(model, val_loader, device):
+    model.eval()
+    correct = 0
+    total = 0
     with torch.no_grad():
         for concepts, labels in val_loader:
             concepts = concepts.to(device)
-            labels = labels.to(device)
+            labels = labels.to(device).long()
 
-            logits = model(concepts)  # Shape: [batch_size, num_classes]
-            all_logits.append(logits.cpu())
-            all_labels.append(labels.cpu())
+            logits = model(concepts)               # [B, num_classes]
+            preds = torch.argmax(logits, dim=1)    # class indices
+            correct += (preds == labels).sum().item()
+            total   += labels.numel()
 
-    # Stack into full tensors
-    all_logits = torch.cat(all_logits, dim=0)  # Shape: [N, C]
-    all_labels = torch.cat(all_labels, dim=0)  # Shape: [N]
-
-    probs = F.softmax(all_logits, dim=1).numpy()  # Convert logits to softmax probabilities
-    labels = all_labels.numpy()                  # Ground truth labels
-
-    num_classes = probs.shape[1]
-    aucs = []
-
-    for class_idx in range(num_classes):
-        # Convert labels to one-vs-rest (binary): 1 for current class, 0 otherwise
-        y_true = (labels == class_idx).astype(int)
-        y_score = probs[:, class_idx]
-
-        if len(np.unique(y_true)) == 2:
-            auc = roc_auc_score(y_true, y_score)
-            aucs.append(auc)
-        else:
-            print(f"Skipping class {class_idx}: only one class present in validation set (label={np.unique(y_true)[0]})")
-
-    if aucs:
-        return np.mean(aucs)
-    else:
-        print("No valid classes for AUC. Returning NaN.")
-        return float('nan')
-
-train_model_with_early_stopping(model, train_loader, val_loader, criterion, optimizer, device, num_epochs, save_path)
+    return correct / max(total, 1)
